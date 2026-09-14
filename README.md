@@ -1,34 +1,65 @@
 # Minify-JSON-Action
-GitHub Action to minify JSON files for upload.
+GitHub Action to minify JSON files
 
 ## General
-This action takes a JSON input file and removes any whitespace and line breaks. By default file paths are relative to your current working directory.
+This action accepts an unescaped JSON array of file paths, & creates/deletes a minified version
 
 ## Parameters
 | Parameter | Status | Description
 | --- | --- | ---
-| input_file | required | The JSON input file to load and minify.
-| output_file | optional | The file to write the minified JSON to. If omitted overwrites the input file.
+| changed_files | optional | JSON array of files to create minified version
+| deleted_files | optional | JSON array of files to delete their minified version
+| prefix | optional | A prefix for the minified file name, can end with / for subdir, e.g. minified/ results in minified/file.json
+| suffix | optional | A suffix for the minified file name, e.g. -min results in file-min.json
 
 ## Example Usage
 ```YAML
+# Automatically creates a minified json file when a json file is edited, & deletes the minified version when the original is deleted
+
+name: Minify JSON
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
-name: Deploy
+    branches:
+    - main
+    paths:
+    - '**.json'
+
 jobs:
-  web-deploy:
-    name: Deploy
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-    - name: [Checkout your files or create a new one]
-    
-    - name: Minify JSON
-      uses: StefanEnsmann/Minify-JSON-Action@1.1.0
-      with:
-        input_file: input.json
-        output_file: output.json
-    
-    - name: [Do what you want with the minified file]
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96
+        with:
+          files: "**.json"
+          matrix: "true"
+          output_renamed_files_as_deleted_and_added: "true"
+
+      - name: Minify JSON
+        if: ${{ (steps.changed-files.outputs.any_changed == 'true') || (steps.changed-files.outputs.any_deleted == 'true') }}
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+          DELETED_FILES: ${{ steps.changed-files.outputs.deleted_files }}
+        uses: Paradoxzyy/Minify-JSON-Action@1.3.0
+        with:
+          changed_files: $ALL_CHANGED_FILES
+          deleted_files: $DELETED_FILES
+          prefix: "minified/"
+          #suffix: "-min"
+
+      - name: Commit
+        if: ${{ (steps.changed-files.outputs.any_changed == 'true') || (steps.changed-files.outputs.any_deleted == 'true') }}
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "[bot] auto-minify"
+          push_options: "--force"
+
 ```
