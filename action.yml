@@ -1,11 +1,25 @@
-name: 'Minify-JSON'
-author: 'Stefan Ensmann'
-description: 'Minify JSON files'
+name: Minify-JSON
+author: Stefan Ensmann (forked by quanovate, & Paradoxzyy)
+description: Minify JSON files
 branding:
-  color: 'yellow'
-  icon: 'minimize-2'
+  color: purple
+  icon: minimize-2
+inputs:
+  changed_files:
+    description: JSON array of files to minify
+    default: "[]"
+  deleted_files:
+    description: JSON array of files to delete their minified version
+    default: "[]"
+  prefix:
+    description: A prefix for the minified file name, can end with / for subdir, e.g. minified/ results in minified/file.json
+    default: ""
+  suffix:
+    description: A suffix for the minified file name, e.g. -min results in file-min.json
+    default: ""
 runs:
-  using: 'composite'
+  using: composite
   steps:
-    - run: find . -name "*.json" | xargs -L1 python ${{ github.action_path }}/minify.py
+    - name: run
       shell: bash
+      run: python ${{ github.action_path }}/minify.py --changed_files="${{ inputs.changed_files }}" --deleted_files="${{ inputs.deleted_files }}" --prefix="${{ inputs.prefix }}" --suffix="${{ inputs.suffix }}"
