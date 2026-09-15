@@ -47,8 +47,9 @@ def main():
 
         path, filefullname = os.path.split(in_file)
         filename, ext = os.path.splitext(filefullname)
+        prefix_path = os.path.split(args.prefix)[0]
         out_file = path + "/" + args.prefix + filename + args.suffix + ext
-        out_dir = path + "/" + (prefix if prefix.endswith("/") else "")
+        out_dir = path + "/" + prefix_path
 
         if os.path.isfile(out_file):
             os.remove(out_file)
